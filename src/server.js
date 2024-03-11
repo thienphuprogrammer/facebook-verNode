@@ -5,17 +5,23 @@ import express from 'express';
 
 import authRouter from "./routers/auth.router";
 import accountRouter from "./routers/account.router";
+import fileRouter from "./routers/local-file.router";
+import postRouter from "./routers/post.router";
 
 import { dbconnect } from "./config/database.config.js";
-import path, { dirname } from 'path';
-dbconnect().then(r => console.log(r));
+dbconnect().then(() => {
+    const app = express();
 
-const app = express();
+    app.use('/auth', authRouter);
+    app.use('/accounts', accountRouter);
+    app.use('/local-files', fileRouter);
+    app.use('/posts', postRouter);
 
-app.use('/api/auth', authRouter);
-app.use('/api/accounts', accountRouter);
-
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}.`);
+    const PORT = process.env.PORT || 5000;
+    app.listen(PORT, () => {
+        console.log(`Server is running on port ${PORT}.`);
+    });
+}).catch((err) => {
+    console.error(err);
 });
+

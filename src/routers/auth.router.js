@@ -1,26 +1,18 @@
 import { Router } from 'express';
 import handler from 'express-async-handler';
-import jwt from 'jsonwebtoken';
 import {
     getProfile,
-    loginWithUsernameAndPassword
+    loginWithUsernameAndPassword,
+    loginWithGoogle
 } from '../controllers/auth.controller';
 
 import auth from "../middlewares/auth.mid";
 
 const router = Router();
 
-router.get('/profile',
-    auth,
-    handler(async (req, res) => {
-        const user = await getProfile(req.user.id);
-        res.send(user);
-    })
-);
 
 router.post('/login-with-username-and-password', handler(async (req, res) => {
     const status = await loginWithUsernameAndPassword(req.body);
-
     if (status.success) {
         res.send(status);
     } else {
@@ -28,17 +20,18 @@ router.post('/login-with-username-and-password', handler(async (req, res) => {
     }
 }));
 
-const generateTokenResponse = (user) => {
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-        expiresIn: '30d',
-    });
-    return {
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        isAdmin: user.isAdmin,
-        token,
-    };
-}
+// get profile
+router.get('/profile', auth, handler(async (req, res) => {
+    const status = await getProfile(req.account._id);
+    res.send(status);
+}));
+
+//get login with google
+router.get('/login-with-google', handler(async (req, res) => {
+    const { credential } = req.body;
+    const status = await loginWithGoogle(credential);
+    res.send(status);
+}));
+
 
 export default router;

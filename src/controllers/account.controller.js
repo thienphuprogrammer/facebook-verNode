@@ -1,44 +1,64 @@
-import bcrypt from 'bcrypt';
-import { AccountModel } from '../models/account.model.js';
-import { BAD_REQUEST } from '../constants/httpStatus.js';
+import {AccountService} from '../services/account.service.js';
 import jwt from "jsonwebtoken";
 
-const PASSWORD_HASH_SALT_ROUNDS = 10;
 
 const createAccount = async ({ email, password }) => {
-    const user = await AccountModel
-        .findOne({ email });
-    if (user) {
-        return {
-            success: false,
-            code: BAD_REQUEST,
-            message: 'User already exists',
-        };
-    }
-    const hashedPassword = await bcrypt.hash(password, PASSWORD_HASH_SALT_ROUNDS);
-    const newUser = await AccountModel.create({
-        email: email.toLowerCase(),
-        password: hashedPassword,
-    });
-    return {
-        success: true,
-        ...generateTokenResponse(newUser),
-    };
-}
-
-const loginWithUsernameAndPassword = async ({ email, password }) => {
-    const user = await AccountModel
-        .findOne({ email });
-    if (user && (await bcrypt.compare(password, user.password))) {
+    const status = await AccountService.createAccount({ email, password });
+    if (status) {
         return {
             success: true,
-            ...generateTokenResponse(user),
+            message: 'Account created successfully'
         };
     }
     return {
         success: false,
-        code: BAD_REQUEST,
-        message: 'Invalid email or password',
+        code: 400,
+        message: 'Account already exists'
+    };
+}
+
+const getAccountById = async (id) => {
+    const account = await AccountService.findById(id);
+    if (account) {
+        return {
+            success: true,
+            ...generateTokenResponse(account)
+        }
+    }
+    return {
+        success: false,
+        code: 400,
+        message: 'Account not found'
+    };
+}
+
+const getAllAccounts = async () => {
+    const accounts = await AccountService.findAll();
+    if (accounts) {
+        return {
+            success: true,
+            ...generateTokenResponse(accounts)
+        }
+    }
+    return {
+        success: false,
+        code: 400,
+        message: 'No accounts found'
+    };
+}
+
+const updateAccount = async (account) => {
+    const status = await AccountService.update(account);
+    if (status) {
+        return {
+            success: true,
+            message: 'Account updated successfully'
+        };
+    }
+    return {
+        success: false,
+        code: 400,
+        message: 'Account not found'
     };
 }
 
@@ -51,9 +71,12 @@ const generateTokenResponse = (user) => {
         email: user.email,
         token,
     };
+
 }
 
 module.exports = {
     createAccount,
-    loginWithUsernameAndPassword
+    getAccountById,
+    getAllAccounts,
+    updateAccount
 }
